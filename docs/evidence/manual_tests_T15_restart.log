@@ -1,0 +1,7 @@
+# T15 서버 종료·재실행 후 데이터 유지  (PORT=8001, DB=data/board.sqlite)  2026-10-28 18:25:31
+> 종료 전 목록: [{"id":5,"title":"한화 vs LG 직관 후기 (수정)","content":"9회말 역전! 잠실 분위기 최고였다. 다음엔 1루석.","authorId":1,"authorName":"Alice","createdAt":"2026-10-28T09:23:52.786Z","updatedAt":"2026-10-28T09:23:53.661Z"}]
+> DB 파일: 12288 bytes 10월 28 18:24
+> 서버 프로세스 종료 → health 요청: 연결 실패 (서버 꺼짐 확인)
+> 재실행 로그: 야구 이야기 게시판 API http://127.0.0.1:8001 (JWT 인증 적용)
+> 재실행 후 목록: [{"id":5,"title":"한화 vs LG 직관 후기 (수정)","content":"9회말 역전! 잠실 분위기 최고였다. 다음엔 1루석.","authorId":1,"authorName":"Alice","createdAt":"2026-10-28T09:23:52.786Z","updatedAt":"2026-10-28T09:23:53.661Z"}]
+> 판정: PASS (id·제목·내용·작성자·createdAt 모두 동일)

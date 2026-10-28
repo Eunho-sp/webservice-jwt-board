@@ -1,0 +1,356 @@
+# 수동 테스트 기록  BASE=http://127.0.0.1:8001  2026-10-28 18:23:48
+# 토큰 원문은 <TOKEN(masked)>로 가렸고, 헤더의 토큰은 user= 로 표시한다.
+
+### T01-a  토큰 없이 목록 조회 (공개)
+> GET /api/posts  user=없음(토큰 없음)
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 2
+< []
+
+### T02  Alice 로그인
+> POST /api/auth/login  user=없음(토큰 없음)
+> body: {"email":"alice@class.test","password":"Classroom!2026"}
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 290
+< {"accessToken":"<TOKEN(masked)>","expiresIn":90,"user":{"id":1,"name":"Alice","email":"alice@class.test"}}
+> (Alice 토큰 조각 수: 3, 헤더 디코드: {"alg":"HS256","typ":"JWT"})
+> (payload 디코드: {"sub":"1","iat":1793179429,"exp":1793179519,"aud":"board-api","iss":"webservice-class"})
+
+### T03-a  틀린 비밀번호로 로그인
+> POST /api/auth/login  user=없음(토큰 없음)
+> body: {"email":"alice@class.test","password":"wrong-password"}
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 92
+< {"code":"INVALID_CREDENTIALS","message":"이메일 또는 비밀번호를 확인하세요."}
+
+### T03-b  없는 이메일로 로그인
+> POST /api/auth/login  user=없음(토큰 없음)
+> body: {"email":"nobody@class.test","password":"Classroom!2026"}
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 92
+< {"code":"INVALID_CREDENTIALS","message":"이메일 또는 비밀번호를 확인하세요."}
+
+### T03-c  (추가) password 누락 → 형식 오류
+> POST /api/auth/login  user=없음(토큰 없음)
+> body: {"email":"alice@class.test"}
+< HTTP/1.1 400 Bad Request
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 68
+< {"code":"BAD_INPUT","message":"password 입력을 확인하세요."}
+
+### T04-a  토큰 없이 /me
+> GET /api/me  user=없음(토큰 없음)
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 125
+< {"code":"TOKEN_REQUIRED","message":"로그인이 필요합니다. Authorization: Bearer <토큰> 형식으로 보내세요."}
+
+### T04-b  토큰 없이 글 등록
+> POST /api/posts  user=없음(토큰 없음)
+> body: {"title":"무토큰","content":"등록 시도"}
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 125
+< {"code":"TOKEN_REQUIRED","message":"로그인이 필요합니다. Authorization: Bearer <토큰> 형식으로 보내세요."}
+
+### T04-c  (추가) Bearer 형식 오류: 'Token xxx' 스킴
+> GET /api/me  user=없음(토큰 없음)
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 125
+< {"code":"TOKEN_REQUIRED","message":"로그인이 필요합니다. Authorization: Bearer <토큰> 형식으로 보내세요."}
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 125
+< {"code":"TOKEN_REQUIRED","message":"로그인이 필요합니다. Authorization: Bearer <토큰> 형식으로 보내세요."}
+
+### T04-d  (추가) 'Bearer' 뒤에 JWT가 아닌 값
+> GET /api/me  user=없음(토큰 없음)
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 125
+< {"code":"TOKEN_REQUIRED","message":"로그인이 필요합니다. Authorization: Bearer <토큰> 형식으로 보내세요."}
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 73
+< {"code":"INVALID_TOKEN","message":"토큰이 유효하지 않습니다."}
+
+### T05-a  Alice 토큰으로 글 작성
+> POST /api/posts  user=Alice(id1) 정상 토큰
+> body: {"title":"한화 vs LG 직관 후기","content":"9회말 역전! 잠실 분위기 최고였다."}
+< HTTP/1.1 201 Created
+< Location: /api/posts/5
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 216
+< {"id":5,"title":"한화 vs LG 직관 후기","content":"9회말 역전! 잠실 분위기 최고였다.","authorId":1,"authorName":"Alice","createdAt":"2026-10-28T09:23:52.786Z","updatedAt":"2026-10-28T09:23:52.786Z"}
+> (생성된 Alice 글 id = 5)
+
+### T05-b  Alice 토큰으로 /me
+> GET /api/me  user=Alice(id1) 정상 토큰
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 50
+< {"id":1,"name":"Alice","email":"alice@class.test"}
+
+### T01-b  토큰 없이 존재하는 글 상세 조회 (공개)
+> GET /api/posts/5  user=없음(토큰 없음)
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 216
+< {"id":5,"title":"한화 vs LG 직관 후기","content":"9회말 역전! 잠실 분위기 최고였다.","authorId":1,"authorName":"Alice","createdAt":"2026-10-28T09:23:52.786Z","updatedAt":"2026-10-28T09:23:52.786Z"}
+
+### T06-a  Alice 본인 글 수정
+> PUT /api/posts/5  user=Alice(id1) 정상 토큰
+> body: {"title":"한화 vs LG 직관 후기 (수정)","content":"9회말 역전! 잠실 분위기 최고였다. 다음엔 1루석."}
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 244
+< {"id":5,"title":"한화 vs LG 직관 후기 (수정)","content":"9회말 역전! 잠실 분위기 최고였다. 다음엔 1루석.","authorId":1,"authorName":"Alice","createdAt":"2026-10-28T09:23:52.786Z","updatedAt":"2026-10-28T09:23:53.661Z"}
+
+### T06-b  (수정 반영 확인) 공개 상세 재조회
+> GET /api/posts/5  user=없음(토큰 없음)
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 244
+< {"id":5,"title":"한화 vs LG 직관 후기 (수정)","content":"9회말 역전! 잠실 분위기 최고였다. 다음엔 1루석.","authorId":1,"authorName":"Alice","createdAt":"2026-10-28T09:23:52.786Z","updatedAt":"2026-10-28T09:23:53.661Z"}
+
+### T06-c  Alice가 삭제용 글 하나 더 작성
+> POST /api/posts  user=Alice(id1) 정상 토큰
+> body: {"title":"삭제 테스트 글","content":"곧 지울 글"}
+< HTTP/1.1 201 Created
+< Location: /api/posts/6
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 178
+< {"id":6,"title":"삭제 테스트 글","content":"곧 지울 글","authorId":1,"authorName":"Alice","createdAt":"2026-10-28T09:23:54.090Z","updatedAt":"2026-10-28T09:23:54.090Z"}
+
+### T06-d  Alice 본인 글 삭제 (id 6)
+> DELETE /api/posts/6  user=Alice(id1) 정상 토큰
+< HTTP/1.1 204 No Content
+
+### T06-e  (삭제 반영 확인) 삭제한 글 재조회
+> GET /api/posts/6  user=없음(토큰 없음)
+< HTTP/1.1 404 Not Found
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 59
+< {"code":"NOT_FOUND","message":"게시글이 없습니다."}
+
+### T07  Bob 정상 토큰으로 Alice 글 수정
+> PUT /api/posts/5  user=Bob(id2) 정상 토큰
+> body: {"title":"Bob이 바꿈","content":"권한 없음 시도"}
+< HTTP/1.1 403 Forbidden
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 95
+< {"code":"FORBIDDEN","message":"본인이 작성한 글만 수정·삭제할 수 있습니다."}
+
+### T07-x  (추가) Bob이 Alice 글에 공백 제목 → 400이 아니라 403
+> PUT /api/posts/5  user=Bob(id2) 정상 토큰
+> body: {"title":"   ","content":"공백 제목"}
+< HTTP/1.1 403 Forbidden
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 95
+< {"code":"FORBIDDEN","message":"본인이 작성한 글만 수정·삭제할 수 있습니다."}
+
+### T08  Bob 정상 토큰으로 Alice 글 삭제
+> DELETE /api/posts/5  user=Bob(id2) 정상 토큰
+< HTTP/1.1 403 Forbidden
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 95
+< {"code":"FORBIDDEN","message":"본인이 작성한 글만 수정·삭제할 수 있습니다."}
+> 데이터 불변 확인(T07/T08 후 재조회): 원문 그대로 유지됨
+  {"id":5,"title":"한화 vs LG 직관 후기 (수정)","content":"9회말 역전! 잠실 분위기 최고였다. 다음엔 1루석.","authorId":1,"authorName":"Alice","createdAt":"2026-10-28T09:23:52.786Z","updatedAt":"2026-10-28T09:23:53.661Z"}
+
+### T09-a  변조 토큰으로 /me
+> GET /api/me  user=Alice 토큰의 서명 첫 글자 변조
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 73
+< {"code":"INVALID_TOKEN","message":"토큰이 유효하지 않습니다."}
+
+### T09-b  변조 토큰으로 글 등록
+> POST /api/posts  user=Alice 토큰의 서명 첫 글자 변조
+> body: {"title":"변조","content":"등록 시도"}
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 73
+< {"code":"INVALID_TOKEN","message":"토큰이 유효하지 않습니다."}
+
+### T09-c  변조 토큰으로 Alice 글 수정
+> PUT /api/posts/5  user=Alice 토큰의 서명 첫 글자 변조
+> body: {"title":"변조","content":"수정 시도"}
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 73
+< {"code":"INVALID_TOKEN","message":"토큰이 유효하지 않습니다."}
+
+### T09-d  변조 토큰으로 Alice 글 삭제
+> DELETE /api/posts/5  user=Alice 토큰의 서명 첫 글자 변조
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 73
+< {"code":"INVALID_TOKEN","message":"토큰이 유효하지 않습니다."}
+> 데이터 불변 확인(T09 후): 원문 그대로 유지됨  / 목록 개수: 1
+
+### T10  만료 토큰 → 별도 실행 (TOKEN_TTL=3 서버, manual_tests_expiry 로그 참고)
+
+### T11  로그아웃 후(헤더에서 토큰 제거) /me
+> GET /api/me  user=없음(토큰 없음)
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 125
+< {"code":"TOKEN_REQUIRED","message":"로그인이 필요합니다. Authorization: Bearer <토큰> 형식으로 보내세요."}
+
+### T12-a  Bob 로그인 상태로 등록에 authorId:1 추가
+> POST /api/posts  user=Bob(id2) 정상 토큰
+> body: {"title":"위조","content":"Alice인 척","authorId":1}
+< HTTP/1.1 400 Bad Request
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 71
+< {"code":"BAD_INPUT","message":"허용된 JSON 필드만 보내세요."}
+
+### T12-b  Bob 로그인 상태로 등록에 userId:1 추가
+> POST /api/posts  user=Bob(id2) 정상 토큰
+> body: {"title":"위조","content":"Alice인 척","userId":1}
+< HTTP/1.1 400 Bad Request
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 71
+< {"code":"BAD_INPUT","message":"허용된 JSON 필드만 보내세요."}
+> 위조 글 미생성 확인: 현재 목록 [{"id":5,"title":"한화 vs LG 직관 후기 (수정)","content":"9회말 역전! 잠실 분위기 최고였다. 다음엔 1루석.","authorId":1,"authorName":"Alice","createdAt":"2026-10-28T09:23:52.786Z","updatedAt":"2026-10-28T09:23:53.661Z"}]
+
+### T13-a  Alice 본인 토큰, 빈 제목
+> POST /api/posts  user=Alice(id1) 정상 토큰
+> body: {"title":"","content":"내용"}
+< HTTP/1.1 400 Bad Request
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 65
+< {"code":"BAD_INPUT","message":"title 입력을 확인하세요."}
+
+### T13-b  Alice 본인 토큰, 공백 본문
+> POST /api/posts  user=Alice(id1) 정상 토큰
+> body: {"title":"제목","content":"   "}
+< HTTP/1.1 400 Bad Request
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 67
+< {"code":"BAD_INPUT","message":"content 입력을 확인하세요."}
+
+### T13-c  Alice 본인 토큰, 제목 101자
+> POST /api/posts  user=Alice(id1) 정상 토큰
+> body: {"title":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","content":"내용"}
+< HTTP/1.1 400 Bad Request
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 65
+< {"code":"BAD_INPUT","message":"title 입력을 확인하세요."}
+
+### T13-d  (추가) Alice 자기 글에 공백 제목으로 수정 → 400
+> PUT /api/posts/5  user=Alice(id1) 정상 토큰
+> body: {"title":"   ","content":"공백 제목"}
+< HTTP/1.1 400 Bad Request
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 65
+< {"code":"BAD_INPUT","message":"title 입력을 확인하세요."}
+> DB 불변 확인(T13 후): 원문 그대로 유지됨  / 목록 개수: 1
+
+### T14-a  없는 글(999999) 조회
+> GET /api/posts/999999  user=없음(토큰 없음)
+< HTTP/1.1 404 Not Found
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 59
+< {"code":"NOT_FOUND","message":"게시글이 없습니다."}
+
+### T14-b  없는 글 수정 (Alice 정상 토큰)
+> PUT /api/posts/999999  user=Alice(id1) 정상 토큰
+> body: {"title":"없음","content":"없음"}
+< HTTP/1.1 404 Not Found
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 59
+< {"code":"NOT_FOUND","message":"게시글이 없습니다."}
+
+### T14-c  없는 글 삭제 (Alice 정상 토큰)
+> DELETE /api/posts/999999  user=Alice(id1) 정상 토큰
+< HTTP/1.1 404 Not Found
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 59
+< {"code":"NOT_FOUND","message":"게시글이 없습니다."}
+
+### T14-d  잘못된 ID 조회 (abc)
+> GET /api/posts/abc  user=없음(토큰 없음)
+< HTTP/1.1 400 Bad Request
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 69
+< {"code":"BAD_INPUT","message":"ID는 양의 정수여야 합니다."}
+
+### T14-e  (함정 항목) 토큰 없이 없는 글 수정 → 404가 아니라 401
+> PUT /api/posts/999999  user=없음(토큰 없음)
+> body: {"title":"없음","content":"없음"}
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 125
+< {"code":"TOKEN_REQUIRED","message":"로그인이 필요합니다. Authorization: Bearer <토큰> 형식으로 보내세요."}
+
+### T15  서버 재시작 후 유지 → 별도 실행 (manual_tests_restart 로그 참고)
+
+### T16  새로고침 후 로그인 해제 → 브라우저 화면 캡처로 확인 (evidence/ui-*.png)
+
+### T17-a  토큰 없이 Alice 글 수정
+> PUT /api/posts/5  user=없음(토큰 없음)
+> body: {"title":"무토큰","content":"수정 시도"}
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 125
+< {"code":"TOKEN_REQUIRED","message":"로그인이 필요합니다. Authorization: Bearer <토큰> 형식으로 보내세요."}
+
+### T17-b  토큰 없이 Alice 글 삭제
+> DELETE /api/posts/5  user=없음(토큰 없음)
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 125
+< {"code":"TOKEN_REQUIRED","message":"로그인이 필요합니다. Authorization: Bearer <토큰> 형식으로 보내세요."}
+
+### T17-c  Bob 본인 글 작성
+> POST /api/posts  user=Bob(id2) 정상 토큰
+> body: {"title":"KIA 우승 가능성?","content":"선발진이 탄탄하다."}
+< HTTP/1.1 201 Created
+< Location: /api/posts/7
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 189
+< {"id":7,"title":"KIA 우승 가능성?","content":"선발진이 탄탄하다.","authorId":2,"authorName":"Bob","createdAt":"2026-10-28T09:24:00.905Z","updatedAt":"2026-10-28T09:24:00.905Z"}
+
+### T17-d  Bob 본인 글 수정 (id 7)
+> PUT /api/posts/7  user=Bob(id2) 정상 토큰
+> body: {"title":"KIA 우승 가능성? (수정)","content":"선발진이 탄탄하다. 불펜도 좋다."}
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 216
+< {"id":7,"title":"KIA 우승 가능성? (수정)","content":"선발진이 탄탄하다. 불펜도 좋다.","authorId":2,"authorName":"Bob","createdAt":"2026-10-28T09:24:00.905Z","updatedAt":"2026-10-28T09:24:01.287Z"}
+
+### T17-e  Bob 본인 글 삭제 (id 7)
+> DELETE /api/posts/7  user=Bob(id2) 정상 토큰
+< HTTP/1.1 204 No Content
+
+### T17-f  (확인) 삭제된 Bob 글 재조회
+> GET /api/posts/7  user=없음(토큰 없음)
+< HTTP/1.1 404 Not Found
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 59
+< {"code":"NOT_FOUND","message":"게시글이 없습니다."}
+
+# 테스트 종료. Alice 글 id 5 는 T15 재시작 확인용으로 남겨 둔다.

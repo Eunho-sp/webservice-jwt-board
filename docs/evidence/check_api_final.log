@@ -1,0 +1,41 @@
+PASS health
+PASS public list
+PASS bad ID
+PASS missing ID
+PASS wrong password
+PASS unknown email
+PASS no token me
+PASS no token create
+PASS login alice@class.test
+PASS login bob@class.test
+PASS Alice me
+PASS Bob me
+PASS create post
+PASS public detail
+PASS no token PUT
+PASS Bob denied PUT
+PASS failed request leaves data unchanged
+PASS no token DELETE
+PASS Bob denied DELETE
+PASS failed request leaves data unchanged
+PASS reject authorId
+PASS reject userId
+PASS input validation
+PASS input validation
+PASS input validation
+PASS input validation
+PASS tampered GET /me
+PASS tampered POST /posts
+PASS tampered PUT /posts/3
+PASS tampered DELETE /posts/3
+PASS failed request leaves data unchanged
+PASS owner update
+PASS create post
+PASS Bob own update
+PASS missing protected PUT
+PASS missing protected DELETE
+PASS delete owned test post
+PASS deleted post missing
+PASS delete owned test post
+PASS deleted post missing
+All 40 checks passed (final). UI and restart tests must be performed separately.

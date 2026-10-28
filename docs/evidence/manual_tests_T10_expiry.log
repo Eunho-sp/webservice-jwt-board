@@ -1,0 +1,34 @@
+# T10 만료 테스트  서버: PORT=8002 TOKEN_TTL=3 DB_FILE=data/expiry-test.sqlite  2026-10-28 18:24:44
+## (1) 자동 검사 check_api.py --expiry
+PASS failed request leaves data unchanged
+PASS failed request leaves data unchanged
+PASS failed request leaves data unchanged
+Waiting 4 seconds for expiration
+PASS expired GET /me
+PASS expired POST /posts
+PASS expired PUT /posts/1
+PASS expired DELETE /posts/1
+PASS failed request leaves data unchanged
+All 48 checks passed (final). UI and restart tests must be performed separately.
+
+## (2) 수동 curl: 발급 → 4초 대기 → /me 및 변경 요청
+> 로그인 응답 expiresIn = "expiresIn":3
+> 발급 직후 POST /api/posts → 201 (id 3), 이제 4초 대기
+> GET /api/me  user=Alice 만료된 정상 서명 토큰
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< {"code":"TOKEN_EXPIRED","message":"로그인 시간이 만료되었습니다. 다시 로그인하세요."}
+> POST /api/posts  user=Alice 만료된 정상 서명 토큰
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< {"code":"TOKEN_EXPIRED","message":"로그인 시간이 만료되었습니다. 다시 로그인하세요."}
+> PUT /api/posts/3  user=Alice 만료된 정상 서명 토큰
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< {"code":"TOKEN_EXPIRED","message":"로그인 시간이 만료되었습니다. 다시 로그인하세요."}
+> DELETE /api/posts/3  user=Alice 만료된 정상 서명 토큰
+< HTTP/1.1 401 Unauthorized
+< WWW-Authenticate: Bearer
+< {"code":"TOKEN_EXPIRED","message":"로그인 시간이 만료되었습니다. 다시 로그인하세요."}
+> 만료 요청 후 글 재조회(불변): {"id":3,"title":"만료 테스트","content":"발급 직후 작성","authorId":1,"authorName":"Alice","createdAt":"2026-10-28T09:24:51.112Z","updatedAt":"2026-10-28T09:24:51.112Z"}
+> 재로그인 후 정리 삭제: HTTP 204

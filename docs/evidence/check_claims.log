@@ -1,0 +1,11 @@
+# 클레임 검증 추가 점검  BASE=http://127.0.0.1:8001  2026-10-28T09:24:40.348Z
+PASS 정상 토큰(대조군)                   → HTTP 200 {"id":1,"name":"Alice","email":"alice@class.test"}
+PASS iss 불일치 (other-issuer)       → HTTP 401 {"code":"INVALID_TOKEN","message":"토큰이 유효하지 않습니다."}  [WWW-Authenticate: Bearer]
+PASS aud 불일치 (other-api)          → HTTP 401 {"code":"INVALID_TOKEN","message":"토큰이 유효하지 않습니다."}  [WWW-Authenticate: Bearer]
+PASS exp 누락                       → HTTP 401 {"code":"INVALID_TOKEN","message":"토큰에 만료 시각이 없습니다."}  [WWW-Authenticate: Bearer]
+PASS sub 누락                       → HTTP 401 {"code":"INVALID_TOKEN","message":"토큰의 사용자 정보가 올바르지 않습니다."}  [WWW-Authenticate: Bearer]
+PASS sub가 숫자형(1)                  → HTTP 401 {"code":"INVALID_TOKEN","message":"토큰의 사용자 정보가 올바르지 않습니다."}  [WWW-Authenticate: Bearer]
+PASS sub가 없는 사용자(99)              → HTTP 401 {"code":"INVALID_TOKEN","message":"존재하지 않는 사용자입니다."}  [WWW-Authenticate: Bearer]
+PASS alg=none (서명 없음)             → HTTP 401 {"code":"INVALID_TOKEN","message":"토큰이 유효하지 않습니다."}  [WWW-Authenticate: Bearer]
+PASS HS512로 같은 키 서명               → HTTP 401 {"code":"INVALID_TOKEN","message":"토큰이 유효하지 않습니다."}  [WWW-Authenticate: Bearer]
+PASS payload만 sub 2로 바꿈 (서명 불일치)  → HTTP 401 {"code":"INVALID_TOKEN","message":"토큰이 유효하지 않습니다."}  [WWW-Authenticate: Bearer]
