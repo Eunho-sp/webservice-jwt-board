@@ -1,11 +1,19 @@
+/* 한화 이글스 느낌의 주황·검정·흰색, MLB파크식 표 게시판 */
 :root {
+  --orange: #ff6600;
+  --orange-dark: #d95400;
+  --black: #111;
+  --line: #ddd;
+  --gray: #666;
   font-family:
     system-ui,
     -apple-system,
     "Apple SD Gothic Neo",
+    "Malgun Gothic",
     sans-serif;
-  color: #17233a;
-  background: #f2f5f9;
+  font-size: 14px;
+  color: #222;
+  background: #f4f4f4;
   font-synthesis: none;
 }
 * {
@@ -14,133 +22,258 @@
 body {
   margin: 0;
 }
-main {
-  max-width: 1120px;
+.wrap {
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 36px 24px 60px;
+  padding: 0 16px;
 }
-header {
-  margin-bottom: 24px;
+.topbar {
+  background: var(--black);
+  color: white;
 }
-h1 {
-  font-size: 32px;
-  margin: 8px 0;
-  letter-spacing: -0.04em;
+.topbar-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 52px;
 }
-h2 {
-  font-size: 19px;
-  margin-top: 0;
+.logo {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
-p {
-  line-height: 1.65;
+.who {
+  font-size: 13px;
+  color: #ccc;
 }
-.eyebrow {
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  color: #416198;
+.subbar {
+  background: var(--orange);
+}
+.tab {
+  display: inline-block;
+  padding: 9px 14px;
+  background: var(--orange-dark);
+  color: white;
   font-weight: 700;
 }
-.banner {
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: #fff1d5;
-  color: #654c16;
+main {
+  padding-top: 16px;
+  padding-bottom: 48px;
+}
+h2 {
+  font-size: 16px;
+  margin: 0 0 10px;
+}
+p {
   line-height: 1.6;
 }
-.grid {
+.banner {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  background: #fff3ea;
+  border-left: 4px solid var(--orange);
+  font-size: 13px;
+}
+.message {
+  background: white;
+  border: 1px solid var(--line);
+  padding: 9px 12px;
+  margin-bottom: 14px;
+  min-height: 40px;
+  font-size: 13px;
+}
+.layout {
   display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 20px;
+  grid-template-columns: 1fr 260px;
+  gap: 16px;
   align-items: start;
 }
-.card {
+.box {
   background: white;
-  border: 1px solid #dfe5ee;
-  border-radius: 14px;
-  padding: 22px;
-  margin-bottom: 20px;
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--black);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.board-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.board-head h2 {
+  margin: 0;
+}
+.board {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 2px solid var(--orange);
+  font-size: 13px;
+}
+.board th {
+  background: #fafafa;
+  font-weight: 600;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--line);
+}
+.board td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #eee;
+}
+.board tr.current td {
+  background: #fff3ea;
+}
+.col-no,
+.col-author,
+.col-date {
+  text-align: center;
+  white-space: nowrap;
+  color: var(--gray);
+}
+.col-no {
+  width: 60px;
+}
+.col-author {
+  width: 90px;
+}
+.col-date {
+  width: 90px;
+}
+.empty {
+  text-align: center;
+  color: var(--gray);
+  padding: 28px 0;
+}
+.post-title {
+  padding: 0;
+  background: transparent;
+  color: #222;
+  font-size: 13px;
+  text-align: left;
+}
+.post-title:hover {
+  color: var(--orange-dark);
+  text-decoration: underline;
+}
+.view-head {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+.view-head h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--gray);
+}
+.content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-height: 60px;
+  padding: 6px 0;
+}
+.view-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+.view-foot p {
+  margin: 0;
 }
 label {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  margin: 14px 0;
+  margin: 10px 0;
 }
 input,
 textarea {
   display: block;
   width: 100%;
-  border: 1px solid #b9c5d6;
-  border-radius: 7px;
-  padding: 11px;
-  margin-top: 7px;
+  border: 1px solid #ccc;
+  padding: 8px;
+  margin-top: 5px;
   font: inherit;
+}
+input:focus,
+textarea:focus {
+  outline: 2px solid var(--orange);
+  border-color: var(--orange);
 }
 textarea {
-  min-height: 130px;
+  min-height: 120px;
   resize: vertical;
 }
-button {
-  background: #2455ad;
+button,
+.btn {
+  display: inline-block;
+  background: var(--orange);
   border: 0;
-  border-radius: 7px;
   color: white;
-  padding: 10px 14px;
+  padding: 7px 12px;
   cursor: pointer;
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
+  text-decoration: none;
+}
+button:hover,
+.btn:hover {
+  background: var(--orange-dark);
 }
 button.secondary {
-  background: #e9eef7;
-  color: #27416c;
+  background: white;
+  color: #333;
+  border: 1px solid #bbb;
+}
+button.secondary:hover {
+  background: #f2f2f2;
 }
 button.danger {
-  background: #b83b47;
+  background: var(--black);
 }
 button:disabled {
-  opacity: 0.5;
-  cursor: wait;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button.full {
+  width: 100%;
+  margin-top: 10px;
 }
 .actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
-.post {
-  border-top: 1px solid #e5e9f0;
-  padding: 15px 0;
-}
-.post:first-of-type {
-  border-top: 0;
-}
-.post-title {
-  padding: 0;
-  color: #234d94;
-  background: transparent;
-  font-size: 17px;
+.who-box {
+  margin: 0;
+  padding: 6px 8px;
+  background: #f7f7f7;
   font-weight: 700;
-  text-align: left;
+}
+.hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--gray);
 }
 small,
 .muted {
-  color: #61718a;
-}
-.message {
-  background: #e6eefb;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin: 16px 0;
-  min-height: 46px;
-}
-.content {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  color: var(--gray);
+  font-size: 12px;
 }
 @media (max-width: 760px) {
-  .grid {
+  .layout {
     grid-template-columns: 1fr;
   }
-  main {
-    padding: 24px 16px;
+  aside {
+    order: -1;
+  }
+  .col-author,
+  .col-date {
+    width: auto;
   }
 }

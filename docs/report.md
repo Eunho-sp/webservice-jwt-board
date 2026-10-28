@@ -190,7 +190,7 @@ API 테스트는 curl로 수행했고 `tools/manual_tests.sh`로 재현할 수 �
 | ID | 수행 절차와 사용자 | 예상 결과 | 실제 HTTP와 code | 판정 | 증거 |
 |---|---|---|---|---|---|
 | T01 | 토큰 없이 GET /api/posts, GET /api/posts/5 | 200 | 200 / 해당 없음 (두 요청 모두) | PASS | manual_tests_T01-T17.log T01-a, T01-b |
-| T02 | Alice 로그인 POST /api/auth/login | 200, 토큰·user, 화면 로그인 표시 | 200 / 해당 없음. accessToken 3조각, 헤더 alg HS256, payload sub "1"·iss·aud·exp | PASS | T02, ui-02-login.png |
+| T02 | Alice 로그인 POST /api/auth/login | 200, 토큰·user, 화면 로그인 표시 | 200 / 해당 없음. accessToken 3조각, 헤더 alg HS256, payload sub "1"·iss·aud·exp | PASS | T02, 그림 1 |
 | T03 | 틀린 비밀번호 / 없는 이메일 로그인 | 401 INVALID_CREDENTIALS | 401 / INVALID_CREDENTIALS (둘 다), password 누락은 400 / BAD_INPUT | PASS | T03-a, b, c |
 | T04 | 토큰 없이 GET /me, POST /posts (+ `Token abc`, `Bearer not-a-jwt`) | 401 TOKEN_REQUIRED | 401 / TOKEN_REQUIRED (둘 다), WWW-Authenticate: Bearer. 잘못된 스킴은 TOKEN_REQUIRED, Bearer 뒤 비JWT는 INVALID_TOKEN | PASS | T04-a~d |
 | T05 | Alice 토큰으로 POST /posts, GET /me | 201 authorId 1, /me는 Alice | 201 / Location: /api/posts/5, authorId 1 · 200 / id 1 Alice | PASS | T05-a, b |
@@ -198,13 +198,13 @@ API 테스트는 curl로 수행했고 `tools/manual_tests.sh`로 재현할 수 �
 | T07 | Bob 토큰으로 Alice 글(5) PUT | 403 FORBIDDEN, 원문 유지 | 403 / FORBIDDEN. 공백 제목이어도 403. 재조회 원문 동일 | PASS | T07, T07-x |
 | T08 | Bob 토큰으로 Alice 글(5) DELETE | 403 FORBIDDEN, 글 유지 | 403 / FORBIDDEN. 재조회 원문 동일 | PASS | T08 |
 | T09 | Alice 토큰 서명 첫 글자 변조 → GET /me, POST, PUT, DELETE | 401 INVALID_TOKEN, 데이터 불변 | 401 / INVALID_TOKEN (4건 모두), WWW-Authenticate: Bearer. 재조회 원문 동일, 글 수 1 | PASS | T09-a~d |
-| T10 | TOKEN_TTL=3 서버에서 발급 → 4초 뒤 GET /me, POST, PUT, DELETE | 401 TOKEN_EXPIRED, 화면 로그아웃 안내 | 401 / TOKEN_EXPIRED (4건 모두), WWW-Authenticate: Bearer. 자동 검사 --expiry 48/48 PASS. 글 재조회 불변 | PASS | manual_tests_T10_expiry.log, ui-10-expired.png |
-| T11 | 로그아웃 후 GET /me (헤더 없음) | 401 TOKEN_REQUIRED | 401 / TOKEN_REQUIRED | PASS | T11, ui-11-logout.png |
+| T10 | TOKEN_TTL=3 서버에서 발급 → 4초 뒤 GET /me, POST, PUT, DELETE | 401 TOKEN_EXPIRED, 화면 로그아웃 안내 | 401 / TOKEN_EXPIRED (4건 모두), WWW-Authenticate: Bearer. 자동 검사 --expiry 48/48 PASS. 글 재조회 불변 | PASS | manual_tests_T10_expiry.log, 그림 7 |
+| T11 | 로그아웃 후 GET /me (헤더 없음) | 401 TOKEN_REQUIRED | 401 / TOKEN_REQUIRED | PASS | T11, 그림 5 |
 | T12 | Bob 토큰으로 POST /posts에 authorId:1 / userId:1 추가 | 400 BAD_INPUT, 미생성 | 400 / BAD_INPUT (둘 다). 목록에 위조 글 없음 | PASS | T12-a, b |
 | T13 | Alice 토큰으로 빈 제목 / 공백 본문 / 제목 101자 / 본인 글에 공백 제목 PUT | 400 BAD_INPUT, DB 불변 | 400 / BAD_INPUT (4건 모두). 재조회 원문 동일 | PASS | T13-a~d |
 | T14 | GET·PUT·DELETE /posts/999999 (정상 토큰), GET /posts/abc | 404 NOT_FOUND, 400 BAD_INPUT | 404 / NOT_FOUND (3건) · 400 / BAD_INPUT. 토큰 없이 없는 글 PUT은 401 / TOKEN_REQUIRED | PASS | T14-a~e |
 | T15 | 글 작성 후 서버 프로세스 종료·재실행 | 글·작성자·내용 유지 | 종료 후 health 연결 실패 확인 → 재실행 → 목록 JSON이 종료 전과 완전히 동일 | PASS | manual_tests_T15_restart.log |
-| T16 | 로그인 후 새로고침 | 글 유지, 로그인 해제 | [브라우저에서 확인 후 기록] | [판정] | ui-16-refresh.png |
+| T16 | 로그인 후 새로고침 | 글 유지, 로그인 해제 | 화면 확인 (HTTP 오류 없음). F5 후 글 목록 2개 그대로 유지, 로그인 표시는 "Bob님 로그인 중" → "로그아웃 상태"로 해제 | PASS | 그림 8 |
 | T17 | 토큰 없이 Alice 글 PUT·DELETE / Bob 본인 글 POST·PUT·DELETE | 무토큰 401, Bob 본인 성공 | 401 / TOKEN_REQUIRED (2건) · 201 / Location, 200, 204 · 삭제 후 404 | PASS | T17-a~f |
 
 ### HTTP 응답 확인 기록
@@ -232,11 +232,55 @@ API 테스트는 curl로 수행했고 `tools/manual_tests.sh`로 재현할 수 �
 
 **추가 클레임 검사** (`backend/scripts/check_claims.mjs`, 로컬 실습 키로 직접 서명): iss 불일치, aud 불일치, exp 누락, sub 누락, sub 숫자형, 없는 사용자(sub 99), alg=none, HS512 서명, payload만 변조 — 9건 모두 401 INVALID_TOKEN, 정상 토큰 대조군은 200. 단순 payload 변조와 달리 iss·aud·exp·sub 케이스는 서명이 올바른 토큰이므로 클레임 검사가 실제로 동작함을 보여줍니다.
 
-[증거 1: 로그인 성공과 토큰이 첨부된 요청 — ui-02-login.png, ui-05-network.png (Network 탭 Authorization 헤더, 토큰 가림)]
+### 증거 1: 로그인 성공과 토큰이 첨부된 요청 (T02, T05)
 
-[증거 2: Bob이 Alice의 글 수정·삭제를 시도한 서버 응답 — manual_tests_T01-T17.log의 T07·T08 블록]
+그림 1. Alice 로그인 (`ui-02-login.png`): 화면에 "Alice님 로그인 중", Network의 `POST /api/auth/login` 200 OK
 
-[증거 3: 토큰 변조·만료 시 서버 응답과 화면 처리 — manual_tests_T01-T17.log T09, manual_tests_T10_expiry.log, ui-10-expired.png]
+![그림 1](evidence/ui-02-login.png)
+
+그림 2. 글 등록 (`ui-05-network1.png`): `POST /api/posts` 201 Created, 응답 헤더 `Location: /api/posts/8`
+
+![그림 2](evidence/ui-05-network1.png)
+
+그림 3. 같은 POST 요청의 Request Headers (`ui-05-network2.png`): `Authorization` 헤더가 전송됨 (값 전체를 가림)
+
+![그림 3](evidence/ui-05-network2.png)
+
+그림 4. 로그인 상태의 다른 요청 Request Headers (`ui-05-network3.png`): `Authorization: Bearer eyJhbGciOiJIUzI1NiIs…` 형식 확인 (앞부분만 남기고 가림)
+
+![그림 4](evidence/ui-05-network3.png)
+
+그림 5. 로그아웃 뒤 내 정보 조회 (`ui-11-logout1.png`, `ui-11-logout2.png`, T11): `GET /api/me` 401, 응답 헤더 `WWW-Authenticate: Bearer`, Request Headers에 `Authorization` 없음, 화면은 "로그아웃 상태"와 "로그인이 필요한 기능입니다" 안내
+
+![그림 5-1](evidence/ui-11-logout1.png)
+
+![그림 5-2](evidence/ui-11-logout2.png)
+
+### 증거 2: Bob이 Alice의 글 수정·삭제를 시도한 서버 응답 (T07, T08)
+
+서버 응답은 `manual_tests_T01-T17.log`의 T07·T08 블록(403 FORBIDDEN, 재조회 시 원문 유지)에 있습니다. 화면에서는 Bob으로 로그인한 상태에서 Alice 글을 열면 수정·삭제 버튼이 없고 안내 문구만 보입니다.
+
+그림 6. Bob이 Alice 글을 연 화면 (`ui-07-other-post.png`): "Bob님 로그인 중" 유지, "다른 사용자의 글은 수정·삭제할 수 없습니다."
+
+![그림 6](evidence/ui-07-other-post.png)
+
+### 증거 3: 토큰 변조·만료 시 서버 응답과 화면 처리 (T09, T10)
+
+변조 토큰 응답은 `manual_tests_T01-T17.log`의 T09, 만료 응답 4건은 `manual_tests_T10_expiry.log`에 있습니다.
+
+그림 7. 만료 (`ui-10-expired.png`, `TOKEN_TTL=3` 서버에서 로그인 후 5초 이상 지나 내 정보 조회): `GET /api/me` 401, 응답 `{"code":"TOKEN_EXPIRED",…}`, 화면은 "로그아웃 상태"와 "로그인 시간이 만료되었습니다. 다시 로그인하세요."
+
+![그림 7](evidence/ui-10-expired.png)
+
+### 그 밖의 화면 증거 (T16, 비로그인)
+
+그림 8. 새로고침 (`ui-16-refresh.png`, T16): Bob 로그인 상태에서 F5 후 글 목록은 그대로, 로그인 표시는 "로그아웃 상태"
+
+![그림 8](evidence/ui-16-refresh.png)
+
+그림 9. 비로그인 첫 화면 (`ui-01-public.png`): "글을 쓰려면 먼저 로그인하세요." 안내와 비활성 등록 버튼
+
+![그림 9](evidence/ui-01-public.png)
 
 자동 검사: `py -I tools/check_api.py --mode final` 40/40 PASS(`check_api_final.log`), `--expiry` 48/48 PASS. 이 스크립트는 교수님이 제공한 것으로, 명세의 상태 코드·code·WWW-Authenticate·Location·데이터 불변을 요청으로 확인합니다. UI 동작과 서버 재시작은 별도로 수동 수행했습니다.
 
@@ -277,7 +321,7 @@ AI가 제안한 내용: `request` 한 곳에서 `response.status === 401`일 때
 
 내가 확인하고 수정한 내용: 403에서 `clearSession`이 호출되지 않는지 코드로 확인했고, 로그아웃 버튼이 메모리 세션과 함께 수정 중이던 입력(`reset()`)도 지우는지 확인했습니다. 코드는 수정 없이 반영했습니다.
 
-검증 방법과 결과: `npm run build` 성공, 4173에서 UI 확인 [화면 캡처 번호]. 401 뒤 "로그아웃 상태"로 바뀌고 403은 로그인 표시가 유지됨.
+검증 방법과 결과: `npm run build` 성공, 4173에서 UI 확인 (4장 그림 5, 그림 7). 401 뒤 "로그아웃 상태"로 바뀌고 403은 로그인 표시가 유지됨.
 
 ### 대표 사례 3 — 테스트 증거 자동 기록
 
