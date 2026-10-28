@@ -5,7 +5,7 @@
 
 ## 작성자와 서비스 소개
 
-- 학번 / 이름: [학번] / [이름]
+- 학번 / 이름: 202524180 / 박은호
 - 서비스 목적과 대상 사용자: 야구를 좋아하는 사람들이 직관 후기, 오늘 경기 감상, 응원하는 팀 이야기를 자유롭게 남기는 게시판입니다. 비로그인 방문자도 모든 글을 읽을 수 있고, 테스트 계정(Alice, Bob)으로 로그인하면 글을 쓸 수 있습니다. 글의 수정과 삭제는 작성자 본인만 할 수 있으며, 서버가 JWT를 검증해 작성자를 결정하므로 다른 사람의 이름으로 글을 쓰거나 남의 글을 고칠 수 없습니다.
 - 선택한 기술: React 19 (Vite 8) + Node.js Express 5
 - 주요 기능: 공개 목록·상세 조회, 로그인(JWT 발급), 내 정보 조회, 글 작성·수정·삭제(본인만), 토큰 만료·로그아웃 처리, SQLite 파일 DB 저장
@@ -14,7 +14,6 @@
 
 - [구현 보고서 PDF](docs/report.pdf) (원본 Markdown: [docs/report.md](docs/report.md))
 - [테스트 증거](docs/evidence/) — curl 로그(토큰 가림), 자동 검사 로그, 빌드 로그, 화면 캡처
-- [AI 활용 기록](docs/ai-log.md)
 
 ## 프로젝트 구조
 
@@ -33,7 +32,6 @@
 │   └── manual_tests.sh       # T01~T17 curl 수동 테스트 스크립트(추가)
 └── docs/
     ├── report.pdf / report.md
-    ├── ai-log.md
     └── evidence/
 ```
 
@@ -55,8 +53,8 @@
 ### 1 저장소 복제
 
 ```sh
-git clone [저장소 URL]
-cd baseball-board
+git clone https://github.com/Eunho-sp/webservice-jwt-board.git
+cd webservice-jwt-board
 ```
 
 ### 2 백엔드 준비와 실행
@@ -81,7 +79,7 @@ npm start
 
 - 환경설정 예시 파일: `backend/.env.example`
 - JWT_SECRET 설정 방법: 위 명령으로 생성한 64자리 hex를 `.env`에 기록. 서버는 `dotenv`로 `.env`를 읽고 `Buffer.from(hex, "hex")`로 32바이트 키로 변환합니다. 실제 키는 저장소·보고서에 기록하지 않습니다.
-- TOKEN_TTL: 기본 90초. 만료 테스트는 `.env`의 `TOKEN_TTL=3`으로 바꾸거나 `TOKEN_TTL=3 npm start`처럼 환경변수로 덮어쓴 뒤 재시작합니다. 테스트 후 90으로 되돌립니다.
+- TOKEN_TTL: 기본 90초. 만료 테스트는 `.env`의 `TOKEN_TTL=3`으로 바꾸거나 환경변수로 덮어쓴 뒤 재시작합니다. PowerShell: `$env:TOKEN_TTL=3; npm start`, cmd: `set TOKEN_TTL=3 && npm start`, macOS/Linux: `TOKEN_TTL=3 npm start`. PowerShell에서 `set`은 환경변수를 바꾸지 않으니 주의합니다. 테스트 후 90으로 되돌립니다.
 - 백엔드 주소: http://127.0.0.1:8000
 - 정상 실행 확인: 콘솔에 `야구 이야기 게시판 API http://127.0.0.1:8000 (JWT 인증 적용)` 출력, 브라우저나 curl로 `http://127.0.0.1:8000/api/health` → `{"status":"ok","stack":"express"}`
 
@@ -135,39 +133,35 @@ npm run preview
 - 실행한 검사 명령과 실행 위치 (저장소 루트, 백엔드 실행 중):
   - 자동 검사: `py -I tools/check_api.py --mode final` → 40/40 PASS (`docs/evidence/check_api_final.log`)
   - 만료 검사: `TOKEN_TTL=3`으로 백엔드 재시작 후 `py -I tools/check_api.py --mode final --expiry` → 48/48 PASS (`docs/evidence/manual_tests_T10_expiry.log`)
-  - 수동 curl: `bash tools/manual_tests.sh` → T01~T17 (`docs/evidence/manual_tests_T01-T17.log`)
+  - 수동 curl: `bash tools/manual_tests.sh` → T01\~T17 (`docs/evidence/manual_tests_T01-T17.log`)
   - 클레임 검사: `cd backend && node scripts/check_claims.mjs` → 10/10 PASS (`docs/evidence/check_claims.log`)
 - Alice/Bob 권한 구분 확인 결과: Bob의 정상 토큰으로 Alice 글 수정·삭제 → 403 FORBIDDEN, 재조회 시 원문 유지. Bob 본인 글 작성·수정·삭제는 201/200/204 (T07, T08, T17).
 - HTTP 상태와 오류 code 확인: 200(조회·로그인·수정), 201(등록), 204(삭제) / 400 BAD_INPUT, 401 INVALID_CREDENTIALS·TOKEN_REQUIRED·INVALID_TOKEN·TOKEN_EXPIRED, 403 FORBIDDEN, 404 NOT_FOUND 모두 명세와 일치. 상세는 보고서 4장.
 - 응답 헤더와 본문 확인: 201에 `Location: /api/posts/{id}`, 보호 API 401 전부에 `WWW-Authenticate: Bearer`, 204는 본문 없음.
 - 토큰 없음·변조·만료 확인 결과: 없음 → 401 TOKEN_REQUIRED, 서명 첫 글자 변조 → 401 INVALID_TOKEN, TTL 3초 만료 → 401 TOKEN_EXPIRED. 각각 /me와 POST·PUT·DELETE 모두 확인, 데이터 불변 확인.
-- 전체 T01~T17 결과와 증거: 보고서 4장 표와 `docs/evidence/`.
+- 전체 T01\~T17 결과와 증거: 보고서 4장 표와 `docs/evidence/`.
 
 ## 핵심 구현 설명
 
 1. **로그인** — 화면의 이메일·비밀번호를 `frontend/src/api.js`의 `login`이 JSON으로 `POST /api/auth/login`에 보냅니다. 서버 `app.js`가 제공된 `verifyCredentials`로 계정을 확인한 뒤 `auth.js`의 `issueToken`이 HS256 JWT(sub·exp·iss·aud)를 발급합니다.
-2. **토큰 보관·전송** — 응답의 `accessToken`과 `user`를 `api.js`의 모듈 변수 `session`(메모리)에만 저장하고, `authorizationHeaders`가 보호 요청마다 `Authorization: Bearer <JWT>`를 붙입니다.
+2. **토큰 보관·전송** — 응답의 `accessToken`과 `user`를 `api.js`의 모듈 변수 `session`(메모리)에만 저장하고, `authorizationHeaders`가 토큰이 있을 때 모든 API 요청에 `Authorization: Bearer <JWT>`를 붙입니다(서버는 보호 API에서만 검사).
 3. **서버 검증** — 보호 API는 `auth.js`의 `currentUserId`가 헤더 형식 → `jwt.verify`(알고리즘 고정, 서명, 만료, iss, aud) → exp·sub 형식 → 실제 계정 존재 순으로 검사해 사용자 ID만 넘깁니다. 실패는 TOKEN_REQUIRED / INVALID_TOKEN / TOKEN_EXPIRED로 구분한 401입니다.
 4. **작성자 권한** — 등록 시 작성자는 검증된 ID로 서버가 저장하고, 수정·삭제는 `assertOwner`가 DB의 `authorId`와 비교해 다르면 403으로 거부합니다. 프론트의 `canEdit`는 버튼 표시용일 뿐 권한 판단은 서버가 합니다.
 
 ## AI 활용 요약과 참고 자료
 
 - AI 사용 여부: 사용
-- 도구와 사용 목적: Claude Code (모델: Claude Fable 5.1). 과제 문서 분석과 작업 순서 설계, BE-01~03·FE-01~04 코드 초안 작성, 테스트 스크립트 작성, 보고서·README 초안 정리
-- 반영 위치와 직접 수정·검증한 내용: `backend/src/auth.js`, `frontend/src/api.js`, `frontend/src/main.jsx`의 코드는 AI 초안을 검토 후 반영했으며, 각 단계마다 curl과 자동 검사로 실제 응답을 확인했습니다. 라이브러리가 exp 없는 토큰을 통과시키는 점은 별도 스크립트로 직접 검증했습니다.
-- 상세 활용 기록: `docs/ai-log.md`, 보고서 5장
-- 참고한 수업 자료·외부 코드·공식 문서:
-  - 교수님 제공 시작 템플릿과 문서(`02_시작템플릿_및_제출양식`: 과제공지, API명세, 구현체크리스트, 테스트시나리오, 로컬실행안내) — 전체 구조와 완료 기준
-  - node-jsonwebtoken README https://github.com/auth0/node-jsonwebtoken — `jwt.sign`/`jwt.verify` 옵션(`algorithms`, `issuer`, `audience`, `expiresIn`), `TokenExpiredError`
-  - Express 5 문서 https://expressjs.com/ — 에러 핸들러 미들웨어(제공 코드 이해)
-  - Vite 문서 https://vite.dev/guide/ — preview 서버와 proxy 설정 이해
+- 도구와 사용 목적: Claude Code (Claude Fable 5.1, Claude Opus 5.5). 작업 순서 정리, BE-01\~03·FE-01\~04 코드 초안, 테스트 스크립트, UI 리뉴얼 코드, README·보고서 문장 정리
+- 반영 위치와 직접 수정·검증한 내용: `auth.js`, `api.js`, `main.jsx`, `style.css`에 검토 후 반영. curl·자동 검사·브라우저 화면으로 직접 확인했고, 캡처와 토큰 가림은 본인이 수행
+- 상세 활용 기록: [보고서 5장](docs/report.pdf)
+- 참고 자료: 6주차 강의자료 「JWT 로그인」, 교수님 제공 템플릿과 문서, [node-jsonwebtoken](https://github.com/auth0/node-jsonwebtoken), Express·Vite 공식 문서 (사용 위치는 보고서 5장 참고 자료 표)
 
 ## 제출 확인
 
 - [x] README의 안내 문구를 실제 내용으로 교체했다.
-- [ ] 새 폴더에 clone하여 README만으로 설치·환경설정·빌드·로컬 실행했다.
-- [ ] 4173번 빌드 화면에서 API 연결과 전체 필수 기능을 확인했다.
-- [ ] GitHub에서 보고서와 증거 링크가 열린다.
-- [ ] 교수자가 저장소를 열람·복제할 수 있다.
+- [x] 새 폴더에 clone하여 README만으로 설치·환경설정·빌드·로컬 실행했다.
+- [x] 4173번 빌드 화면에서 API 연결과 전체 필수 기능을 확인했다.
+- [x] GitHub에서 보고서와 증거 링크가 열린다.
+- [x] 교수자가 저장소를 열람·복제할 수 있다. (공개 저장소)
 - [x] 비밀 키·실제 토큰·DB·node_modules·.venv·target을 커밋하지 않았다.
 - [ ] 최종 push 후 저장소 URL과 제출 기준 커밋 SHA를 LMS에 제출했다.
